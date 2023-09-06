@@ -11,8 +11,8 @@ import {
   createUser,
   setPlayerAction,
   joinTable,
-  gameStateCallBack,
 } from "./Poker/PlayerControls";
+import { gameStateCallBack } from "./Poker/Callbacks";
 import { GamePhase, PlayerInput } from "./Assets/Interfaces";
 import { PrismaClient } from "@prisma/client";
 import { AppContext, PlayerMoves } from "./Types/types";
@@ -139,8 +139,6 @@ socketServer.on("connection", (socket) => {
       await gameStateCallBack(app, table_id, socket);
     }
   );
-
-  
 });
 
 app.use(cors({ origin: true, credentials: true }));
