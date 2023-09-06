@@ -11,8 +11,15 @@ import {
   setEndGame,
   setCards,
   getTable,
+  setOrder,
+  getGameState,
+  setFlopCards,
+  setRevealCards,
+  setNextActiveIndex,
+  getActivePlayerTurn,
 } from "./ClassFunctions";
 import { BettingRound } from "@prisma/client";
+import { GamePhase } from "../Assets/Interfaces";
 
 // Define your event handler methods here
 const SMALL_BLIND = 20;
@@ -176,7 +183,7 @@ export const startGame = async (app: AppContext, table_id: number) => {
     if (table && table?.players.length < 2) {
       throw new Error("Not enough players to start the game");
     }
-
+    await setOrder(app, table_id);
     await setBlinds(app, table_id);
     await setCards(app, table_id);
     await setDealCards(app, table_id);
@@ -196,7 +203,10 @@ export const endGame = async (app: AppContext, table_id: number) => {
     throw new Error("Error ending game and closing socket");
   }
 };
-
+// TBD - set the next round
+export const setNextRound = async (app: AppContext, table_id: number) => {
+  // rotate order and set Blinds again
+};
 // implements check hand fold hand etc
 export const setPlayerAction = async (
   app: AppContext,
@@ -215,9 +225,53 @@ export const setPlayerAction = async (
     startGame(app, table_id); // working
   } else if (playerMove === PlayerMoves.ENDGAME) {
     endGame(app, table_id); // working
+  } else if (playerMove === PlayerMoves.NEXTROUND) {
+    //implement next round
   } else {
     console.log("Invalid player move");
     throw new Error("Invalid move");
   }
 };
 
+export const gameStateCallBack = async (
+  app: AppContext,
+  table_id: number,
+  socket: Socket
+) => {
+  const state = await getGameState(app, table_id); // return 0 - betting round, 1 - no cards, 2 - 3 cards, 3 - 4 cards , 4 - 5 cards
+
+  switch (state) {
+    case GamePhase.BETTINGROUND:
+      await setNextActiveIndex(app, table_id); // betting round set the index to the next person
+
+      break;
+    case GamePhase.FIRSTFLOP:
+      // deal 3 cards
+      await setFlopCards(app, table_id, 3);
+
+      break;
+    case GamePhase.SECONDFLOP:
+      // deal 1 card
+      await setFlopCards(app, table_id, 1);
+
+      break;
+    case GamePhase.THIRDFLOP:
+      // deal 1 card
+      await setFlopCards(app, table_id, 1);
+
+      break;
+    case GamePhase.ENDING:
+      // open everyone's cards
+      await setRevealCards(app, table_id);
+      // TBD - determine winner and proceed to next round (reset)
+      break;
+  }
+
+  const table = await getTable(app, table_id);
+  const activeIndex = await getActivePlayerTurn(app, table_id);
+
+  socket.emit(SOCKETEVENTS.emit.getTableData, {
+    state: state,
+    table: table,
+  });
+};

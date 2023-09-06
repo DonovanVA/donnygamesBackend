@@ -15,5 +15,6 @@ export enum PlayerMoves {
   FOLD = "FOLD",
   BUYIN = "BUYIN",
   STARTGAME = "STARTGAME",
+  NEXTROUND ="NEXTROUND",
   ENDGAME = "ENDGAME",
 }

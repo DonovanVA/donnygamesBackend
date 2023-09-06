@@ -11,6 +11,7 @@ import {
   createUser,
   setPlayerAction,
   joinTable,
+  gameStateCallBack,
 } from "./Poker/PlayerControls";
 import { GamePhase, PlayerInput } from "./Assets/Interfaces";
 import { PrismaClient } from "@prisma/client";
@@ -25,6 +26,7 @@ import {
   setNextActiveIndex,
   setRevealCards,
 } from "./Poker/ClassFunctions";
+import { table } from "console";
 //NOTE: each method in a class should emit a socket event, index.ts handles the event listener in this observer design pattern
 const app = express();
 const prisma = new PrismaClient();
@@ -114,6 +116,7 @@ socketServer.on("connection", (socket) => {
     await disconnectFromTable(app, parseInt(player_id));
     console.log("A user disconnected");
   });
+
   socket.on(
     SOCKETEVENTS.on.PlayerAction,
     async (
@@ -133,47 +136,11 @@ socketServer.on("connection", (socket) => {
         console.log("It is not the requestor's turn");
         throw new Error("It is not the requestor's turn");
       }
+      await gameStateCallBack(app, table_id, socket);
     }
   );
 
-  socket.on(SOCKETEVENTS.on.RequestGameState, async (table_id: number) => {
-    const state = await getGameState(app, table_id); // return 0 - betting round, 1 - no cards, 2 - 3 cards, 3 - 4 cards , 4 - 5 cards
-
-    switch (state) {
-      case GamePhase.BETTINGROUND:
-        await setNextActiveIndex(app, table_id); // betting round set the index to the next person
-
-        break;
-      case GamePhase.FIRSTFLOP:
-        // deal 3 cards
-        await setFlopCards(app, table_id, 3);
-
-        break;
-      case GamePhase.SECONDFLOP:
-        // deal 1 card
-        await setFlopCards(app, table_id, 1);
-
-        break;
-      case GamePhase.THIRDFLOP:
-        // deal 1 card
-        await setFlopCards(app, table_id, 1);
-
-        break;
-      case GamePhase.ENDING:
-        // open everyone's cards
-        await setRevealCards(app, table_id);
-        // determine winner
-        break;
-    }
-
-    const table = await getTable(app, table_id);
-    const activeIndex = await getActivePlayerTurn(app, table_id);
-
-    socket.emit(SOCKETEVENTS.emit.getTableData, {
-      state: state,
-      table: table,
-    });
-  });
+  
 });
 
 app.use(cors({ origin: true, credentials: true }));

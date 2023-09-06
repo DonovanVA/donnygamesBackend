@@ -29,8 +29,8 @@ export const shuffleCards = (deckOfCards: PlayingCard[]) => {
 
 export const getNumberOfZeros = (arr: any) => {
   let counter = 0;
-  arr.map((item: number) => {
-    if (item === 0) {
+  arr.map((item: any) => {
+    if (item.order === 0) {
       counter = counter + 1;
     }
   });

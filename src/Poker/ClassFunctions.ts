@@ -172,17 +172,62 @@ export const getActiveIndex = async (
     throw new Error("Could not get the active index");
   }
 };
-export const setOrder = async (app: AppContext, table_id: number) => {
+//
+export const setNextActiveIndex = async (
+  app: AppContext,
+  pokerTable_id: number
+) => {
   try {
-    const orders = await getOrders(app, table_id);
-    const nPlayers = orders?.length;
+    const pokerTable = await getTable(app, pokerTable_id);
 
+    const numPlayers = pokerTable?.players.length;
+    // last index => set the next index to 0
+    if (
+      numPlayers &&
+      pokerTable?.activeIndex &&
+      pokerTable?.activeIndex > numPlayers - 2
+    ) {
+      const updateIndex = await app.prisma.pokerTable.update({
+        where: {
+          pokerTable_id: pokerTable_id,
+        },
+        data: {
+          activeIndex: 0,
+        },
+      });
+    } else {
+      const updateIndex = await app.prisma.pokerTable.update({
+        where: {
+          pokerTable_id: pokerTable_id,
+        },
+        data: {
+          activeIndex: {
+            increment: 1,
+          },
+        },
+      });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+// TBD - rotate order after the end of each round
+export const setRotateOrder = async (
+  app: AppContext,
+  pokerTable_id: number
+) => {};
+
+export const setOrder = async (app: AppContext, pokerTable_id: number) => {
+  try {
+    const orders = await getOrders(app, pokerTable_id);
+    const nPlayers = orders?.length;
     // Check if any player has an order of 0
     if (getNumberOfZeros(orders) > 0) {
       // Get all players in the poker table
       const players = await app.prisma.player.findMany({
         where: {
-          pokerTable_id: table_id,
+          pokerTable_id: pokerTable_id,
         },
       });
 
@@ -194,25 +239,26 @@ export const setOrder = async (app: AppContext, table_id: number) => {
         await app.prisma.playerTableOrderInstance.update({
           where: {
             player_id: players[i].player_id,
-            pokerTable_id: table_id,
+            pokerTable_id: pokerTable_id,
           },
           data: {
-            order: i + 1,
+            order: i - 1 + 1,
           },
         });
       }
     }
+    // rotate order
   } catch (error) {
     console.log(error);
     throw new Error("Could not set the order for players");
   }
 };
 
-export const setBlinds = async (app: AppContext, table_id: number) => {
+export const setBlinds = async (app: AppContext, pokerTable_id: number) => {
   try {
     const pokerTable = await app.prisma.pokerTable.findFirst({
       where: {
-        pokerTable_id: table_id,
+        pokerTable_id: pokerTable_id,
       },
       include: {
         players: true,
@@ -233,13 +279,13 @@ export const setBlinds = async (app: AppContext, table_id: number) => {
     }
 
     if (pokerTable?.players.length >= 2) {
-      await setBlind(app, 0, smallBlindAmount, table_id);
-      await setBlind(app, 1, bigBlindAmount, table_id);
+      await setBlind(app, 0, smallBlindAmount, pokerTable_id);
+      await setBlind(app, 1, bigBlindAmount, pokerTable_id);
     }
 
     for (let order = 1; order < pokerTable?.players.length - 1; order++) {
-      await setBlind(app, order, smallBlindAmount, table_id);
-      await setBlind(app, order + 1, bigBlindAmount, table_id);
+      await setBlind(app, order, smallBlindAmount, pokerTable_id);
+      await setBlind(app, order + 1, bigBlindAmount, pokerTable_id);
     }
   } catch (error) {
     console.log(error);
@@ -251,12 +297,12 @@ export const setBlind = async (
   app: AppContext,
   order: number,
   betAmount: number,
-  table_id: number
+  pokerTable_id: number
 ) => {
   try {
     await app.prisma.player.updateMany({
       where: {
-        pokerTable_id: table_id,
+        pokerTable_id: pokerTable_id,
         playerTableOrderInstance: {
           order: order,
         },
@@ -510,44 +556,6 @@ export const setRevealCards = async (
   }
 };
 
-export const setNextActiveIndex = async (
-  app: AppContext,
-  pokerTable_id: number
-) => {
-  try {
-    const pokerTable = await getTable(app, pokerTable_id);
-
-    const numPlayers = pokerTable?.players.length;
-    // last index => set the next index to 0
-    if (
-      numPlayers &&
-      pokerTable?.activeIndex &&
-      pokerTable?.activeIndex > numPlayers - 2
-    ) {
-      const updateIndex = await app.prisma.pokerTable.update({
-        where: {
-          pokerTable_id: pokerTable_id,
-        },
-        data: {
-          activeIndex: 0,
-        },
-      });
-    } else {
-      const updateIndex = await app.prisma.pokerTable.update({
-        where: {
-          pokerTable_id: pokerTable_id,
-        },
-        data: {
-          activeIndex: {
-            increment: 1,
-          },
-        },
-      });
-    }
-  } catch (error) {
-    console.log(error);
-  }
-};
 // this function ends the game and removes the resources from the database
 export const setEndGame = async (app: AppContext, pokerTable_id: number) => {
   try {
@@ -574,3 +582,5 @@ export const setEndGame = async (app: AppContext, pokerTable_id: number) => {
     throw new Error("Error ending game");
   }
 };
+// TBD - set winner
+export const setWinner = async (app: AppContext, pokerTable_id: number) => {};
