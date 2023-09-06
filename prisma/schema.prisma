@@ -1,0 +1,97 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Suit {
+  HEARTS
+  DIAMONDS
+  CLUBS
+  SPADES
+}
+
+enum Value {
+  TWO
+  THREE
+  FOUR
+  FIVE
+  SIX
+  SEVEN
+  EIGHT
+  NINE
+  TEN
+  JACK
+  QUEEN
+  KING
+  ACE
+}
+
+enum Color {
+  RED
+  BLACK
+}
+
+enum BettingRound {
+ BEGINNING
+ FIRSTFLOP
+ SECONDFLOP
+ THIRDFLOP
+ ENDING
+}
+model PokerTable {
+  pokerTable_id             Int                           @id @default(autoincrement())
+  players                   Player[]
+  pot                       Int
+  activeIndex               Int
+  bettingRound              BettingRound
+  cards                     Card[]
+  playerTableOrderInstance  PlayerTableOrderInstance[]
+  createdAt                 DateTime                      @default(now())
+}
+
+model Player {
+  player_id                 Int                           @id @default(autoincrement())
+  pokerTable                PokerTable                    @relation(fields: [pokerTable_id], references: [pokerTable_id], onDelete: Cascade)
+  pokerTable_id             Int
+  playerTableOrderInstance  PlayerTableOrderInstance? 
+  name                      String
+  totalBuyIn                Int
+  cash                      Int
+  bet                       Int
+  cards                     Card[]
+  createdAt                 DateTime                       @default(now())
+}
+
+model Card {
+  card_id           Int                                    @id @default(autoincrement())
+  faceDown          Boolean                                @default(true)
+  suit              Suit
+  value             Value
+  color             Color
+  playerId          Int?
+  player            Player?                                @relation(fields: [playerId], references: [player_id])
+  pokerTable_id     Int
+  pokerTable        PokerTable ?                           @relation(fields: [pokerTable_id], references: [pokerTable_id],onDelete: Cascade)
+}
+
+model PlayerTableOrderInstance {
+  player_id                 Int                            @unique
+  pokerTable_id             Int
+  pokerTable                PokerTable                     @relation(fields: [pokerTable_id], references: [pokerTable_id], onDelete: Cascade)
+  player                    Player                         @relation(fields: [player_id], references: [player_id], onDelete: Cascade)
+  order                     Int
+  createdAt                 DateTime                       @default(now())
+  isHost                    Boolean               
+  folded                    Boolean?                       @default(false)
+
+  @@id([player_id,pokerTable_id])
+}
+
+
+
+

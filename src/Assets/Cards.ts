@@ -1,0 +1,63 @@
+import { PlayingCard, Value } from "./Interfaces";
+import { Suit } from "./Interfaces";
+
+export const playingCards: PlayingCard[] = [
+  { unicode: "🂡", name: Value.ACE, suit: Suit.SPADES, isRed: false },
+  { unicode: "🂢", name: Value.TWO, suit: Suit.SPADES, isRed: false },
+  { unicode: "🂣", name: Value.THREE, suit: Suit.SPADES, isRed: false },
+  { unicode: "🂤", name: Value.FOUR, suit: Suit.SPADES, isRed: false },
+  { unicode: "🂥", name: Value.FIVE, suit: Suit.SPADES, isRed: false },
+  { unicode: "🂦", name: Value.SIX, suit: Suit.SPADES, isRed: false },
+  { unicode: "🂧", name: Value.SEVEN, suit: Suit.SPADES, isRed: false },
+  { unicode: "🂨", name: Value.EIGHT, suit: Suit.SPADES, isRed: false },
+  { unicode: "🂩", name: Value.NINE, suit: Suit.SPADES, isRed: false },
+  { unicode: "🂪", name: Value.TEN, suit: Suit.SPADES, isRed: false },
+  { unicode: "🂫", name: Value.JACK, suit: Suit.SPADES, isRed: false },
+  { unicode: "🂭", name: Value.QUEEN, suit: Suit.SPADES, isRed: false },
+  { unicode: "🂮", name: Value.KING, suit: Suit.SPADES, isRed: false },
+
+  // Hearts
+  { unicode: "🃑", name: Value.ACE, suit: Suit.HEARTS, isRed: true },
+  { unicode: "🃒", name: Value.TWO, suit: Suit.HEARTS, isRed: true },
+  { unicode: "🃓", name: Value.THREE, suit: Suit.HEARTS, isRed: true },
+  { unicode: "🃔", name: Value.FOUR, suit: Suit.HEARTS, isRed: true },
+  { unicode: "🃕", name: Value.FIVE, suit: Suit.HEARTS, isRed: true },
+  { unicode: "🃖", name: Value.SIX, suit: Suit.HEARTS, isRed: true },
+  { unicode: "🃗", name: Value.SEVEN, suit: Suit.HEARTS, isRed: true },
+  { unicode: "🃘", name: Value.EIGHT, suit: Suit.HEARTS, isRed: true },
+  { unicode: "🃙", name: Value.NINE, suit: Suit.HEARTS, isRed: true },
+  { unicode: "🃚", name: Value.TEN, suit: Suit.HEARTS, isRed: true },
+  { unicode: "🃛", name: Value.JACK, suit: Suit.HEARTS, isRed: true },
+  { unicode: "🃝", name: Value.QUEEN, suit: Suit.HEARTS, isRed: true },
+  { unicode: "🃞", name: Value.KING, suit: Suit.HEARTS, isRed: true },
+
+  // Diamonds
+  { unicode: "🂱", name: Value.ACE, suit: Suit.DIAMONDS, isRed: true },
+  { unicode: "🂲", name: Value.TWO, suit: Suit.DIAMONDS, isRed: true },
+  { unicode: "🂳", name: Value.THREE, suit: Suit.DIAMONDS, isRed: true },
+  { unicode: "🂴", name: Value.FOUR, suit: Suit.DIAMONDS, isRed: true },
+  { unicode: "🂵", name: Value.FIVE, suit: Suit.DIAMONDS, isRed: true },
+  { unicode: "🂶", name: Value.SIX, suit: Suit.DIAMONDS, isRed: true },
+  { unicode: "🂷", name: Value.SEVEN, suit: Suit.DIAMONDS, isRed: true },
+  { unicode: "🂸", name: Value.EIGHT, suit: Suit.DIAMONDS, isRed: true },
+  { unicode: "🂹", name: Value.NINE, suit: Suit.DIAMONDS, isRed: true },
+  { unicode: "🂺", name: Value.TEN, suit: Suit.DIAMONDS, isRed: true },
+  { unicode: "🂻", name: Value.JACK, suit: Suit.DIAMONDS, isRed: true },
+  { unicode: "🂽", name: Value.QUEEN, suit: Suit.DIAMONDS, isRed: true },
+  { unicode: "🂾", name: Value.KING, suit: Suit.DIAMONDS, isRed: true },
+
+  // Clubs
+  { unicode: "🃁", name: Value.ACE, suit: Suit.CLUBS, isRed: false },
+  { unicode: "🃂", name: Value.TWO, suit: Suit.CLUBS, isRed: false },
+  { unicode: "🃃", name: Value.THREE, suit: Suit.CLUBS, isRed: false },
+  { unicode: "🃄", name: Value.FOUR, suit: Suit.CLUBS, isRed: false },
+  { unicode: "🃅", name: Value.FIVE, suit: Suit.CLUBS, isRed: false },
+  { unicode: "🃆", name: Value.SIX, suit: Suit.CLUBS, isRed: false },
+  { unicode: "🃇", name: Value.SEVEN, suit: Suit.CLUBS, isRed: false },
+  { unicode: "🃈", name: Value.EIGHT, suit: Suit.CLUBS, isRed: false },
+  { unicode: "🃉", name: Value.NINE, suit: Suit.CLUBS, isRed: false },
+  { unicode: "🃊", name: Value.TEN, suit: Suit.CLUBS, isRed: false },
+  { unicode: "🃋", name: Value.JACK, suit: Suit.CLUBS, isRed: false },
+  { unicode: "🃍", name: Value.QUEEN, suit: Suit.CLUBS, isRed: false },
+  { unicode: "🃎", name: Value.KING, suit: Suit.CLUBS, isRed: false },
+];

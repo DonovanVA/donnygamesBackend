@@ -1,9 +1,11 @@
+// userRoutes.ts
+
 import express from "express";
+import { createTable, } from "../Poker/PlayerControls";
 
-export const userRoutes = express.Router();
+const router = express.Router();
 
-// Define your routes
-userRoutes.get("/", (req, res) => {
-  // Handle getting a list of users
-  res.json({ message: "List of users" });
-});
+
+//router.post("/joinTable/:tableId", joinTable);
+
+export { router as userRoutes };
