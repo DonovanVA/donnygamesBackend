@@ -149,7 +149,7 @@ socketServer.on("connection", (socket) => {
   );
 });
 
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({ origin: true, credentials: true })); // cors settings 
 
 app.use("/api/users", userRoutes);
 
