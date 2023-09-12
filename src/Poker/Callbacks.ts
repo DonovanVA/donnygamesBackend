@@ -45,8 +45,13 @@ export const gameStateCallBack = async (
   }
 
   const table = await getTable(app, table_id);
-  const activeIndex = await getActivePlayerTurn(app, table_id);
-
+  console.log(table);
+  socket
+    .to(`table_${table?.pokerTable_id}`)
+    .emit(SOCKETEVENTS.emit.getTableData, {
+      state: state,
+      table: table,
+    });
   socket.emit(SOCKETEVENTS.emit.getTableData, {
     state: state,
     table: table,

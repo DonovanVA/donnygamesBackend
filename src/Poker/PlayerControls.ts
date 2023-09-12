@@ -12,14 +12,10 @@ import {
   setCards,
   getTable,
   setOrder,
-  getGameState,
-  setFlopCards,
-  setRevealCards,
-  setNextActiveIndex,
-  getActivePlayerTurn,
 } from "./ClassFunctions";
 import { BettingRound } from "@prisma/client";
 import { GamePhase } from "../Assets/Interfaces";
+import { gameStateCallBack } from "./Callbacks";
 
 // Define your event handler methods here
 const SMALL_BLIND = 20;
@@ -38,7 +34,7 @@ export const createUser = async (
     const existingHost = await app.prisma.playerTableOrderInstance.findFirst({
       where: { pokerTable_id: table.pokerTable_id, isHost: true },
     });
-
+    const isHost = !existingHost;
     // Create a new user entry in the database
     const newUser = await app.prisma.player.create({
       data: {
@@ -49,26 +45,23 @@ export const createUser = async (
         pokerTable: {
           connect: { pokerTable_id: table.pokerTable_id }, // Connect the user to the existing pokerTable using its ID
         },
+        playerTableOrderInstance: {
+          create: {
+            order: 0, // Initialize the order to 0 (or the appropriate value)
+            isHost: isHost,
+            pokerTable_id: table.pokerTable_id,
+          },
+        },
+      },
+      include: {
+        playerTableOrderInstance: true,
       },
     });
 
     // Determine if the newUser should be the host
-    const isHost = !existingHost;
-
-    // Create a PlayerTableOrderInstance entry for the newUser
-    await app.prisma.playerTableOrderInstance.create({
-      data: {
-        player_id: newUser.player_id,
-
-        pokerTable_id: table.pokerTable_id,
-        order: 0, // Initialize the order to 0 (or the appropriate value)
-        isHost: isHost,
-      },
-    });
 
     // Emit the userCreated event with the newUser's ID
     return newUser;
-    //app.socket.emit(SOCKETEVENTS.emit.userCreated, newUser.player_id);
   } catch (error) {
     console.error("Error creating user:", error);
     // Handle the error and emit an error event if needed
@@ -110,7 +103,6 @@ export const disconnectFromTable = async (
 
       // Leave the socket room and emit the disconnectedFromTable event
       app.socket.leave(`table_${tableId}`);
-      app.socket.emit(SOCKETEVENTS.emit.disconnectedFromTable);
       console.log("player disconnected clean up successful");
     }
   } catch (error) {
@@ -158,7 +150,6 @@ export const joinTable = async (app: AppContext, table_id: number) => {
     const pokerTable = await app.prisma.pokerTable.findUnique({
       where: { pokerTable_id: table_id },
     });
-
     if (!pokerTable) {
       console.error("Table not found");
       return;
@@ -213,17 +204,17 @@ export const setPlayerAction = async (
   player_id: number,
   table_id: number,
   playerMove: PlayerMoves,
+  host: boolean,
   amount?: number
 ) => {
-  console.log(playerMove);
   if (playerMove === PlayerMoves.BET && amount) {
     setBet(app, player_id, table_id, amount); // working
   } else if (playerMove === PlayerMoves.BUYIN && amount) {
     setBuyIn(app, player_id, table_id, amount); // working
   } else if (playerMove === PlayerMoves.FOLD) setFold(app, player_id, table_id);
-  else if (playerMove === PlayerMoves.STARTGAME) {
+  else if (playerMove === PlayerMoves.STARTGAME && host) {
     startGame(app, table_id); // working
-  } else if (playerMove === PlayerMoves.ENDGAME) {
+  } else if (playerMove === PlayerMoves.ENDGAME && host) {
     endGame(app, table_id); // working
   } else if (playerMove === PlayerMoves.NEXTROUND) {
     //implement next round

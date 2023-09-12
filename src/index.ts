@@ -20,13 +20,10 @@ import { SOCKETEVENTS } from "./SocketManager/events";
 import {
   getActivePlayerTurn,
   getGameState,
+  getHost,
   getPlayerInfo,
   getTable,
-  setFlopCards,
-  setNextActiveIndex,
-  setRevealCards,
 } from "./Poker/ClassFunctions";
-import { table } from "console";
 //NOTE: each method in a class should emit a socket event, index.ts handles the event listener in this observer design pattern
 const app = express();
 const prisma = new PrismaClient();
@@ -95,11 +92,7 @@ socketServer.on("connection", (socket) => {
             });
           state &&
             newTableData &&
-            socket.emit(SOCKETEVENTS.emit.getTableData, {
-              state: state,
-              player: player,
-              table: newTableData,
-            });
+            (await gameStateCallBack(app, table_id, socket));
         }
       } catch (error) {
         console.log("error joining table");
@@ -112,10 +105,16 @@ socketServer.on("connection", (socket) => {
     // Perform actions like removing the user from the table
   });
   // ... (other event handlers)
-  socket.on(SOCKETEVENTS.on.disconnect, async (player_id: string) => {
-    await disconnectFromTable(app, parseInt(player_id));
-    console.log("A user disconnected");
-  });
+  socket.on(
+    SOCKETEVENTS.on.disconnect,
+    async (player_id: string, table_id: string) => {
+      await disconnectFromTable(app, parseInt(player_id));
+      app.socket
+        .in(`table_${table_id}`)
+        .emit(SOCKETEVENTS.emit.disconnectedFromTable);
+      console.log("A user disconnected");
+    }
+  );
 
   socket.on(
     SOCKETEVENTS.on.PlayerAction,
@@ -127,16 +126,25 @@ socketServer.on("connection", (socket) => {
     ) => {
       const activeIndex = await getActivePlayerTurn(app, table_id);
       const player = await getPlayerInfo(app, player_id);
+      const host = await getHost(app, table_id);
       if (
-        player?.playerTableOrderInstance?.order === activeIndex &&
-        player?.player_id === player_id
+        (player?.playerTableOrderInstance?.order === activeIndex &&
+          player?.player_id === player_id) ||
+        host?.player_id === player_id
       ) {
-        await setPlayerAction(app, player_id, table_id, playerInput, amount);
+        await setPlayerAction(
+          app,
+          player_id,
+          table_id,
+          playerInput,
+          host?.player_id === player_id,
+          amount
+        );
+        await gameStateCallBack(app, table_id, socket);
       } else {
         console.log("It is not the requestor's turn");
         throw new Error("It is not the requestor's turn");
       }
-      await gameStateCallBack(app, table_id, socket);
     }
   );
 });

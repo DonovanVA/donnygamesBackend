@@ -87,6 +87,7 @@ export const getTable = async (app: AppContext, pokerTable_id: number) => {
         players: {
           include: {
             cards: true,
+            playerTableOrderInstance: true,
           },
         },
         cards: true,
@@ -150,11 +151,15 @@ export const getPlayerInfo = async (app: AppContext, player_id: number) => {
 
 export const getHost = async (app: AppContext, pokerTable_id: number) => {
   try {
-    const host = await app.prisma.pokerTable.findFirst({
+    const host = await app.prisma.player.findFirst({
       where: {
         pokerTable_id: pokerTable_id,
+        playerTableOrderInstance: {
+          isHost: true,
+        },
       },
     });
+    return host;
   } catch (error) {
     console.log(error);
     throw new Error("Could not get the host");

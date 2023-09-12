@@ -4,7 +4,7 @@ export const SOCKETEVENTS = {
     disconnectedFromTable: "disconnectedFromTable",
     tableCreated: "tableCreated",
     tableJoined: "tableJoined",
-    getPlayerAction: "getPlayerAction",
+    //getPlayerAction: "getPlayerAction",
     getTableData: "getTableData",
   },
 
