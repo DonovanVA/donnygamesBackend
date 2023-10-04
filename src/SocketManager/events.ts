@@ -4,8 +4,9 @@ export const SOCKETEVENTS = {
     disconnectedFromTable: "disconnectedFromTable",
     tableCreated: "tableCreated",
     tableJoined: "tableJoined",
-    //getPlayerAction: "getPlayerAction",
     getTableData: "getTableData",
+    roundSummary: "roundSummary",
+    winner:"getWinner",
   },
 
   on: {

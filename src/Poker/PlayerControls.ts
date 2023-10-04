@@ -2,28 +2,20 @@ import { Socket } from "socket.io"; // Import the appropriate type for Socket fr
 import { AppContext, PlayerMoves, User } from "../Types/types";
 import { SOCKETEVENTS } from "../SocketManager/events";
 import { PlayerInput } from "../Assets/Interfaces";
+import { getTable } from "./Lib/Getters";
+import { setOrder, setRotateOrder } from "./Lib/TurnOrderManagement";
+import { BettingRound } from "@prisma/client";
 import {
-  setBet,
-  setBuyIn,
-  setFold,
-  setDealCards,
-  setBlinds,
+  setBettingRound,
   setEndGame,
   setCards,
-  getTable,
-  setOrder,
-} from "./ClassFunctions";
-import { BettingRound } from "@prisma/client";
-import { GamePhase } from "../Assets/Interfaces";
-import { gameStateCallBack } from "./Callbacks";
+  setBlinds,
+  setDealCards,
+  foldThePlayersThatCannotPlay,
+} from "./Lib/GameFlow";
+import { checkIfCanRaise, setBet, setBuyIn, setFold } from "./Lib/PlayerAction";
 
-// Define your event handler methods here
-const SMALL_BLIND = 20;
-const BIG_BLIND = 40;
-
-/**
- * This function creates a user
- */
+// this function creates a user
 export const createUser = async (
   app: AppContext,
   playerInput: PlayerInput,
@@ -67,9 +59,7 @@ export const createUser = async (
     // Handle the error and emit an error event if needed
   }
 };
-/**
- *  This function disconnects a table
- */
+// this function disconnects a user from the table
 export const disconnectFromTable = async (
   app: AppContext,
   playerId: number
@@ -110,11 +100,7 @@ export const disconnectFromTable = async (
     // Handle the error and emit an error event if needed
   }
 };
-/**
- *
- * This function creates a table and then joins it
- * @returns table object
- */
+// this function creates a new table and socket instance
 export const createTable = async (app: AppContext) => {
   try {
     // Create a new PokerTable entry in the database
@@ -139,11 +125,8 @@ export const createTable = async (app: AppContext) => {
     // Handle the error and emit an error event if needed
   }
 };
-/**
- *  This function joins a table
- *  @returns table object
- */
 
+// this function connects a user to a table and an active socket instance
 export const joinTable = async (app: AppContext, table_id: number) => {
   try {
     // Find the PokerTable to join
@@ -164,7 +147,7 @@ export const joinTable = async (app: AppContext, table_id: number) => {
     // Handle the error and emit an error event if needed
   }
 };
-
+// this function starts the game
 export const startGame = async (app: AppContext, table_id: number) => {
   // Add logic to start the game here
   // For example, deal cards and set blinds
@@ -174,19 +157,26 @@ export const startGame = async (app: AppContext, table_id: number) => {
     if (table && table?.players.length < 2) {
       throw new Error("Not enough players to start the game");
     }
+    // 1. fold the players that cannot play the game
+    await foldThePlayersThatCannotPlay(app, table_id);
+    // 2. set the orders of the players
     await setOrder(app, table_id);
+    // 3. set the blinds
     await setBlinds(app, table_id);
+    // 4. set the cards for the game
     await setCards(app, table_id);
+    // 5. deal the cards to the players
     await setDealCards(app, table_id);
+    // 6. set the betting round
+    await setBettingRound(app, table_id, BettingRound.FIRSTBETTINGROUND);
   } catch (error) {
     console.log(error);
-    throw new Error("Error starting game");
+    //throw new Error("Error starting game");
   }
 };
-
+// this function deletes the game and closes the socket instance
 export const endGame = async (app: AppContext, table_id: number) => {
-  // Add logic to end the game here
-  // For example, determine the winner, distribute chips, and reset the game state
+  // delete the table and close the socket connection
   try {
     setEndGame(app, table_id);
   } catch (error) {
@@ -194,11 +184,29 @@ export const endGame = async (app: AppContext, table_id: number) => {
     throw new Error("Error ending game and closing socket");
   }
 };
-// TBD - set the next round
+// this function sets the next round of an existing game in an existing socket instance
 export const setNextRound = async (app: AppContext, table_id: number) => {
   // rotate order and set Blinds again
+  try {
+    // 1. fold the players that cannot play the game
+    await foldThePlayersThatCannotPlay(app, table_id);
+    // 2. shift the order by 1
+    await setRotateOrder(app, table_id);
+    // 3. set the blinds
+    await setBlinds(app, table_id);
+    // 4. set the cards for the game
+    await setCards(app, table_id);
+    // 5. deal the cards to the players
+    await setDealCards(app, table_id);
+    // 6. set the betting round
+    await setBettingRound(app, table_id, BettingRound.FIRSTBETTINGROUND);
+  } catch (error) {
+    console.log(error);
+    throw new Error("Error setting next round game");
+  }
 };
-// implements check hand fold hand etc
+
+// this function sets the player's action for the game
 export const setPlayerAction = async (
   app: AppContext,
   player_id: number,
@@ -208,18 +216,20 @@ export const setPlayerAction = async (
   amount?: number
 ) => {
   if (playerMove === PlayerMoves.BET && amount) {
-    setBet(app, player_id, table_id, amount); // working
+    // TBD, check if the player has enough to bet, can set a flag for side pot if the player has not enough in this function
+    // TBD allow for checking (0 bets as a move)
+    await setBet(app, player_id, table_id, amount, false); // working
   } else if (playerMove === PlayerMoves.BUYIN && amount) {
-    setBuyIn(app, player_id, table_id, amount); // working
+    await setBuyIn(app, player_id, table_id, amount); // working
   } else if (playerMove === PlayerMoves.FOLD) setFold(app, player_id, table_id);
   else if (playerMove === PlayerMoves.STARTGAME && host) {
-    startGame(app, table_id); // working
+    await startGame(app, table_id); // working
   } else if (playerMove === PlayerMoves.ENDGAME && host) {
-    endGame(app, table_id); // working
+    await endGame(app, table_id); // working
   } else if (playerMove === PlayerMoves.NEXTROUND) {
-    //implement next round
+    await setNextRound(app, table_id);
   } else {
     console.log("Invalid player move");
-    throw new Error("Invalid move");
+    //throw new Error("Invalid move");
   }
 };

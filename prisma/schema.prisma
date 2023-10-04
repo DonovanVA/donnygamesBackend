@@ -37,11 +37,12 @@ enum Color {
 }
 
 enum BettingRound {
- BEGINNING
- FIRSTFLOP
- SECONDFLOP
- THIRDFLOP
- ENDING
+  BEGINNING 
+  FIRSTBETTINGROUND
+  SECONDBETTINGROUND
+  THIRDBETTINGROUND
+  FINALBETTINGROUND
+  ENDING
 }
 model PokerTable {
   pokerTable_id             Int                           @id @default(autoincrement())
@@ -49,9 +50,10 @@ model PokerTable {
   pot                       Int
   activeIndex               Int
   bettingRound              BettingRound
-  cards                     Card[]
+  cards                     Card[]               
   playerTableOrderInstance  PlayerTableOrderInstance[]
   createdAt                 DateTime                      @default(now())
+  numRaises                 Int                           @default(0)
 }
 
 model Player {
@@ -73,6 +75,8 @@ model Card {
   suit              Suit
   value             Value
   color             Color
+  image_url_front   String
+  image_url_back    String
   playerId          Int?
   player            Player?                                @relation(fields: [playerId], references: [player_id])
   pokerTable_id     Int
@@ -94,4 +98,12 @@ model PlayerTableOrderInstance {
 
 
 
-
+model DefaultCardDeck{
+  cardDeck_id       Int                                    @id @default(autoincrement())
+  faceDown          Boolean                                @default(true)
+  suit              Suit
+  value             Value
+  color             Color
+  image_url_front   String
+  image_url_back    String
+}

@@ -13,10 +13,13 @@ export enum Suit {
 
 export enum GamePhase {
   BEGINNING = "BEGINNING",
-  BETTINGROUND = "BETTINGROUND",
+  FIRSTBETTINGROUND = "FIRSTBETTINGROUND",
   FIRSTFLOP = "FIRSTFLOP",
+  SECONDBETTINGROUND = "SECONDBETTINGROUND",
   SECONDFLOP = "SECONDFLOP",
+  THIRDBETTINGROUND = "THIRDBETTINGROUND",
   THIRDFLOP = "THIRDFLOP",
+  FINALBETTINGROUND = "FINALBETTINGROUND",
   ENDING = "ENDING",
 }
 
@@ -45,4 +48,41 @@ export enum Value {
   QUEEN = "QUEEN",
   KING = "KING",
   ACE = "ACE",
+}
+
+export interface HandStrength {
+  pairs: {
+    numberOPairs: number;
+    highestValue: number;
+  };
+  trips: {
+    hasTrips: boolean;
+    highestValue: number;
+  };
+  fullHouse: {
+    hasFullHouse: boolean;
+    highestValue: number;
+  };
+  quads: {
+    hasQuads: boolean;
+    highestValue: number;
+  };
+  straights: {
+    hasStraights: boolean;
+    highestValue: number;
+  };
+  flush: {
+    hasFlush: boolean;
+    highestValue: number;
+  };
+  straightFlush: {
+    hasStraightFlush: boolean;
+    highestValue: number;
+  };
+  royalFlush: {
+    hasRoyalFlush: boolean;
+  };
+}
+export interface PlayerHandStrength extends HandStrength{
+  player_id:number;
 }

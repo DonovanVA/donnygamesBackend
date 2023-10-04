@@ -1,5 +1,4 @@
 import express from "express";
-import dotenv from "dotenv";
 import cors from "cors";
 import http from "http";
 import { Server } from "socket.io";
@@ -7,13 +6,12 @@ import { userRoutes } from "./Routes/userRoutes";
 import {
   createTable,
   disconnectFromTable,
-  endGame,
   createUser,
   setPlayerAction,
   joinTable,
 } from "./Poker/PlayerControls";
 import { gameStateCallBack } from "./Poker/Callbacks";
-import { GamePhase, PlayerInput } from "./Assets/Interfaces";
+import { PlayerInput } from "./Assets/Interfaces";
 import { PrismaClient } from "@prisma/client";
 import { AppContext, PlayerMoves } from "./Types/types";
 import { SOCKETEVENTS } from "./SocketManager/events";
@@ -23,7 +21,7 @@ import {
   getHost,
   getPlayerInfo,
   getTable,
-} from "./Poker/ClassFunctions";
+} from "./Poker/Lib/Getters";
 //NOTE: each method in a class should emit a socket event, index.ts handles the event listener in this observer design pattern
 const app = express();
 const prisma = new PrismaClient();
@@ -92,7 +90,8 @@ socketServer.on("connection", (socket) => {
             });
           state &&
             newTableData &&
-            (await gameStateCallBack(app, table_id, socket));
+            player &&
+            (await gameStateCallBack(app, table_id, player?.player_id, socket));
         }
       } catch (error) {
         console.log("error joining table");
@@ -140,7 +139,7 @@ socketServer.on("connection", (socket) => {
           host?.player_id === player_id,
           amount
         );
-        await gameStateCallBack(app, table_id, socket);
+        await gameStateCallBack(app, table_id, player_id, socket);
       } else {
         console.log("It is not the requestor's turn");
         throw new Error("It is not the requestor's turn");
@@ -149,7 +148,7 @@ socketServer.on("connection", (socket) => {
   );
 });
 
-app.use(cors({ origin: true, credentials: true })); // cors settings 
+app.use(cors({ origin: true, credentials: true })); // cors settings
 
 app.use("/api/users", userRoutes);
 
