@@ -48,6 +48,7 @@ model PokerTable {
   pokerTable_id             Int                           @id @default(autoincrement())
   players                   Player[]
   pot                       Int
+  sidePot                   SidePot[]
   activeIndex               Int
   bettingRound              BettingRound
   cards                     Card[]               
@@ -106,4 +107,12 @@ model DefaultCardDeck{
   color             Color
   image_url_front   String
   image_url_back    String
+}
+
+model SidePot {
+  pokerTable_id Int @unique
+  pokerTable                PokerTable                     @relation(fields: [pokerTable_id], references: [pokerTable_id], onDelete: Cascade)
+  player_id     Int[]
+  amount        Int
+  order         Int
 }

@@ -5,6 +5,7 @@ import {
   Suit,
   Value,
   Card,
+  Player,
 } from "@prisma/client";
 import {
   checkIfCardsHaveBeenSet,
@@ -89,12 +90,10 @@ export const setBlinds = async (app: AppContext, pokerTable_id: number) => {
     if (pokerTable?.players.length == 2) {
       await setBlind(app, 1, SMALLBLINDAMOUNT, pokerTable_id);
       await setBlind(app, 2, BIGBLINDAMOUNT, pokerTable_id);
-    }
-    else {
+    } else {
       await setBlind(app, 2, SMALLBLINDAMOUNT, pokerTable_id);
       await setBlind(app, 3, BIGBLINDAMOUNT, pokerTable_id);
     }
-   
   } catch (error) {
     console.log(error);
     throw new Error("Could not set the blinds");
@@ -135,6 +134,7 @@ export const moveBetsToPot = async (app: AppContext, pokerTable_id: number) => {
     const pokerTable = await app.prisma.pokerTable.findFirst({
       where: { pokerTable_id: pokerTable_id },
       include: {
+        sidePot: true,
         players: {
           include: {
             cards: true, // Include player's cards
@@ -143,7 +143,7 @@ export const moveBetsToPot = async (app: AppContext, pokerTable_id: number) => {
         },
       },
     });
-
+    const activePlayers = await getActivePlayers(app, pokerTable_id);
     if (!pokerTable) {
       throw new Error("Poker table not found");
     }
@@ -152,23 +152,56 @@ export const moveBetsToPot = async (app: AppContext, pokerTable_id: number) => {
     const totalBets = pokerTable.players.reduce((sum, player) => {
       return sum + player.bet;
     }, 0);
-
-    // Update the pot with the total bets
-    await app.prisma.pokerTable.update({
-      where: { pokerTable_id: pokerTable_id },
-      data: {
-        pot: pokerTable.pot + totalBets,
-      },
+    // side pot
+    // if a player bets his bets all his cash, create a side pot
+    // Check if any player has bet their entire cash bet
+    const playersBettingAllIn = pokerTable.players.filter((player) => {
+      return player.bet === player.cash;
     });
 
-    await app.prisma.player.updateMany({
-      where: {
-        pokerTable_id: pokerTable_id,
-      },
-      data: {
-        bet: 0,
-      },
-    });
+    if (playersBettingAllIn.length > 0) {
+      const sidePotAmount = playersBettingAllIn[0].bet * activePlayers.length;
+      const remaining_bets = totalBets - sidePotAmount;
+
+      // shift the main pot amount to the side pot, the remaining amounts of the betting round will be moved to the mainpot
+
+      await app.prisma.pokerTable.update({
+        where: { pokerTable_id: pokerTable_id },
+        data: {
+          pot: remaining_bets,
+        },
+      });
+      let arrayOfPlayerId = [];
+      for (let i = 0; i < playersBettingAllIn.length; i++) {
+        arrayOfPlayerId.push(playersBettingAllIn[i].bet);
+      }
+      // the player_id indicates the players that will be excluded from the main pot, and can only receive these earnings
+      const sidePot = await app.prisma.sidePot.create({
+        data: {
+          pokerTable_id: pokerTable_id,
+          amount: pokerTable.pot + sidePotAmount,
+          player_id: arrayOfPlayerId,
+          order: pokerTable.sidePot.length + 1,
+        },
+      });
+    } else {
+      // Update the pot with the total bets
+      await app.prisma.pokerTable.update({
+        where: { pokerTable_id: pokerTable_id },
+        data: {
+          pot: pokerTable.pot + totalBets,
+        },
+      });
+
+      await app.prisma.player.updateMany({
+        where: {
+          pokerTable_id: pokerTable_id,
+        },
+        data: {
+          bet: 0,
+        },
+      });
+    }
 
     console.log("Bets moved to the pot successfully");
   } catch (error) {
@@ -446,25 +479,69 @@ export const setWinner = async (app: AppContext, pokerTable_id: number) => {
     }
 
     // 5. allocate the winnings and update the pot back to 0
+    // Get the current poker table with side pots
+    const pokerTable = await app.prisma.pokerTable.findFirst({
+      where: { pokerTable_id: pokerTable_id },
+      include: {
+        sidePot: true,
+        players: true,
+      },
+    });
 
-    const winner = await app.prisma.player.update({
-      where: {
-        player_id: winnerId,
-      },
-      data: {
-        cash: {
-          increment: table?.pot,
+    if (!pokerTable) {
+      throw new Error("Poker table not found");
+    }
+
+    // Calculate the total pot for the main pot and all side pots
+    const totalPot =
+      pokerTable.pot +
+      pokerTable.sidePot.reduce((sum, sidePot) => sum + sidePot.amount, 0);
+
+    ////////////// Side pot for winners that have side pots
+    // Check if the winner is in any side pot
+    const relevantSidePots = pokerTable.sidePot.find((sidePot) => {
+      return sidePot.player_id.includes(winnerId);
+    });
+
+    // Calculate the total amount to add based on lower-order side pots he belongs to
+    let totalAmountToAdd = 0;
+    if (relevantSidePots) {
+      for (let i = 0; i < pokerTable.sidePot.length; i++) {
+        if (pokerTable.sidePot[i].order <= relevantSidePots?.order) {
+          totalAmountToAdd = totalAmountToAdd + pokerTable.sidePot[i].amount;
+        }
+      }
+    }
+
+    // winner has alled in and has side pot
+    if (totalAmountToAdd > 0 && relevantSidePots) {
+      await app.prisma.player.update({
+        where: {
+          player_id: winnerId,
         },
-      },
-    });
-    const updatedTable = await app.prisma.pokerTable.update({
-      where: {
-        pokerTable_id: pokerTable_id,
-      },
-      data: {
-        pot: 0,
-      },
-    });
+        data: {
+          cash: {
+            increment: totalAmountToAdd,
+          },
+        },
+      });
+    }
+    ////////////// Side pot for winners that have side pots
+    // winner is not part of any side pot
+    else {
+      await app.prisma.player.update({
+        where: {
+          player_id: winnerId,
+        },
+        data: {
+          cash: {
+            increment: totalPot,
+          },
+        },
+      });
+    }
+
+    console.log("Winnings allocated successfully");
     return winnerId;
   } catch (error) {
     // Handle the error appropriately, possibly by emitting an error event
@@ -501,5 +578,21 @@ export const endGameIfThereIsOnlyOnePlayerLeft = async (
     return activePlayers[0].player_id;
   } else {
     return 0;
+  }
+};
+
+export const checkIfNeedToShowAllCards = async (
+  app: AppContext,
+  pokerTable_id: number
+) => {
+  const activePlayers = await getActivePlayers(app, pokerTable_id);
+  let temp = activePlayers.slice();
+  temp = activePlayers.filter((player: Player) => {
+    return player.cash === 0;
+  });
+  if (activePlayers.length - temp.length < 2) {
+    return true;
+  } else {
+    false;
   }
 };
