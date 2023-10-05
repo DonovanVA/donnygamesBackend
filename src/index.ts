@@ -77,7 +77,11 @@ socketServer.on("connection", (socket) => {
       try {
         const table = await joinTable(app, table_id);
 
-        if (table) {
+        if (table === -1) {
+          app.socket.emit(SOCKETEVENTS.emit.serverError, {
+            error: "Table not found",
+          });
+        } else {
           const player = await createUser(app, playerInput, table);
           const newTableData = await getTable(app, table_id);
           const state = await getGameState(app, table_id); // return 0 - betting round, 1 - no cards, 2 - 3 cards, 3 - 4 cards , 4 - 5 cards

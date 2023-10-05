@@ -7,6 +7,7 @@ export const SOCKETEVENTS = {
     getTableData: "getTableData",
     roundSummary: "roundSummary",
     winner:"getWinner",
+    serverError:"serverError",
   },
 
   on: {

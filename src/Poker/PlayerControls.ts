@@ -135,8 +135,7 @@ export const joinTable = async (app: AppContext, table_id: number) => {
       where: { pokerTable_id: table_id },
     });
     if (!pokerTable) {
-      console.error("Table not found");
-      return;
+      return -1;
     }
 
     // Emit the playerJoined event
