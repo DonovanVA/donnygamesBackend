@@ -540,6 +540,17 @@ export const setWinner = async (app: AppContext, pokerTable_id: number) => {
         },
       });
     }
+    await app.prisma.pokerTable.update({
+      where: {
+        pokerTable_id: pokerTable_id,
+      },
+      data: {
+        pot: 0,
+        sidePot: {
+          deleteMany: {},
+        },
+      },
+    });
 
     console.log("Winnings allocated successfully");
     return winnerId;

@@ -17,9 +17,8 @@ export const setBet = async (
   try {
     const canRaise = await checkIfCanRaise(app, pokerTable_id);
     const playerInfo = await getPlayerInfo(app, player_id);
-  
+
     if (playerInfo && bet > playerInfo?.cash) {
-      
       throw new Error("Bet amount exceeds available cash");
     } else {
       const activePlayers = await getActivePlayers(app, pokerTable_id);
@@ -40,9 +39,8 @@ export const setBet = async (
             },
           },
         });
-      }
-      else if(bet > highestBet && !canRaise){
-        throw new Error("Max raises restriction reached")
+      } else if (bet > highestBet && !canRaise) {
+        throw new Error("Max raises restriction reached");
       }
 
       const placeBets = await app.prisma.player.update({
@@ -58,6 +56,15 @@ export const setBet = async (
             decrement: bet,
           },
         },
+      });
+      const updatePlayer = await app.prisma.playerTableOrderInstance.update({
+        where: {
+          player_id: player_id,
+          pokerTable_id: pokerTable_id,
+        },
+        data:{
+          hasBetted:true
+        }
       });
     }
   } catch (error) {

@@ -93,6 +93,7 @@ model PlayerTableOrderInstance {
   createdAt                 DateTime                       @default(now())
   isHost                    Boolean               
   folded                    Boolean?                       @default(false)
+  hasBetted                 Boolean
 
   @@id([player_id,pokerTable_id])
 }

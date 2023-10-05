@@ -15,7 +15,7 @@ import { GamePhase } from "../Assets/Interfaces";
 import { SOCKETEVENTS } from "../SocketManager/events";
 import { BettingRound } from "@prisma/client";
 
-// TBD next Round issues
+
 export const gameStateCallBack = async (
   app: AppContext,
   table_id: number,
@@ -31,7 +31,6 @@ export const gameStateCallBack = async (
     });
   } else {
     const show = await checkIfNeedToShowAllCards(app, table_id);
-    
     if (show) {
       const getFlopCards = await app.prisma.card.findMany({
         where: {
@@ -45,7 +44,7 @@ export const gameStateCallBack = async (
       await moveBetsToPot(app, table_id);
       await setRevealCards(app, table_id);
       const winner_id = await setWinner(app, table_id);
-      
+
       socket.emit(SOCKETEVENTS.emit.winner, {
         winner_id: winner_id,
       });

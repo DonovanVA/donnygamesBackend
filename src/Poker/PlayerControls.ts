@@ -42,6 +42,7 @@ export const createUser = async (
             order: 0, // Initialize the order to 0 (or the appropriate value)
             isHost: isHost,
             pokerTable_id: table.pokerTable_id,
+            hasBetted: false,
           },
         },
       },
@@ -215,10 +216,10 @@ export const setPlayerAction = async (
   host: boolean,
   amount?: number
 ) => {
-  if (playerMove === PlayerMoves.BET && amount) {
-    // TBD, check if the player has enough to bet, can set a flag for side pot if the player has not enough in this function
-    // TBD allow for checking (0 bets as a move)
+  if (playerMove === PlayerMoves.BET && amount && amount > 0) {
     await setBet(app, player_id, table_id, amount, false); // working
+  } else if (playerMove === PlayerMoves.BET) {
+    await setBet(app, player_id, table_id, 0, false); // working
   } else if (playerMove === PlayerMoves.BUYIN && amount) {
     await setBuyIn(app, player_id, table_id, amount); // working
   } else if (playerMove === PlayerMoves.FOLD) setFold(app, player_id, table_id);

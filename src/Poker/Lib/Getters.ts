@@ -1,3 +1,4 @@
+import { Player } from "@prisma/client";
 import { GamePhase, PlayerHandStrength } from "../../Assets/Interfaces";
 import { AppContext } from "../../Types/types";
 
@@ -66,7 +67,7 @@ export const getGameState = async (app: AppContext, pokerTable_id: number) => {
 
     // push the bet array of players whose still playing: bet > 0
     for (let i = 0; i < players.length; i++) {
-      if (players[i].bet > 0) {
+      if (players[i].bet >= 0) {
         betArray.push(players[i].bet);
       }
       if (!players[i].playerTableOrderInstance?.folded) {
@@ -81,15 +82,31 @@ export const getGameState = async (app: AppContext, pokerTable_id: number) => {
     }
     // BETTING ROUND if betting is not equal or there are no bets, continue with betting round
     console.log(betArray);
+    var hasPlayersBet = players.filter((player) => {
+      return (
+        player.playerTableOrderInstance?.hasBetted === true &&
+        player.playerTableOrderInstance.folded === false
+      );
+    });
+
     if (
       !checkIfThereIsOnlyOneElement(betArray) ||
-      betArray.length !== nonFoldedPlayers
+      betArray.length !== nonFoldedPlayers ||
+      hasPlayersBet.length < players.length
     ) {
       return table?.bettingRound;
     }
 
     //2. if bets are all equal, then
     else {
+      await app.prisma.playerTableOrderInstance.updateMany({
+        where: {
+          pokerTable_id: pokerTable_id,
+        },
+        data: {
+          hasBetted: false,
+        },
+      });
       switch (table?.bettingRound) {
         case GamePhase.FIRSTBETTINGROUND:
           return GamePhase.FIRSTFLOP; // trigger draw 3 cards
@@ -106,6 +123,7 @@ export const getGameState = async (app: AppContext, pokerTable_id: number) => {
           console.log("Invalid number of cards");
           return -1;
       }
+      //
     }
   } catch (error) {
     console.log(error);
