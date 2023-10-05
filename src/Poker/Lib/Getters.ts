@@ -120,6 +120,7 @@ export const getTable = async (app: AppContext, pokerTable_id: number) => {
         pokerTable_id: pokerTable_id,
       },
       include: {
+        sidePot: true,
         players: {
           include: {
             cards: true,
