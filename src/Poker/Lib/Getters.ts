@@ -32,14 +32,13 @@ export const getActivePlayers = async (
     const players = await app.prisma.player.findMany({
       where: {
         pokerTable_id: pokerTable_id,
+        playerTableOrderInstance: {
+          folded: false,
+        },
       },
       include: {
         cards: true,
-        playerTableOrderInstance: {
-          where: {
-            folded: false,
-          },
-        },
+        playerTableOrderInstance: true,
       },
     });
     return players;

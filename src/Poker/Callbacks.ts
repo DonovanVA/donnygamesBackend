@@ -15,7 +15,6 @@ import { GamePhase } from "../Assets/Interfaces";
 import { SOCKETEVENTS } from "../SocketManager/events";
 import { BettingRound } from "@prisma/client";
 
-
 export const gameStateCallBack = async (
   app: AppContext,
   table_id: number,
@@ -24,9 +23,26 @@ export const gameStateCallBack = async (
 ) => {
   const state = await getGameState(app, table_id);
   const winner_id = await endGameIfThereIsOnlyOnePlayerLeft(app, table_id);
+  const table = await getTable(app, table_id);
+  table?.players.sort((a, b) => a.player_id - b.player_id);
+
   if (winner_id !== 0) {
-    // if a winner is emitted, the player can choose to next round
+    socket.emit(SOCKETEVENTS.emit.getTableData, {
+      state: state,
+      table: table,
+    });
+   
+    socket
+      .to(`table_${table?.pokerTable_id}`)
+      .emit(SOCKETEVENTS.emit.getTableData, {
+        state: state,
+        table: table,
+      });
     socket.emit(SOCKETEVENTS.emit.winner, {
+      winner_id: winner_id,
+    });
+
+    socket.to(`table_${table_id}`).emit(SOCKETEVENTS.emit.winner, {
       winner_id: winner_id,
     });
   } else {
@@ -106,6 +122,8 @@ export const gameStateCallBack = async (
     }
 
     const table = await getTable(app, table_id);
+    table?.players.sort((a, b) => a.player_id - b.player_id);
+
     socket.emit(SOCKETEVENTS.emit.getTableData, {
       state: state,
       table: table,

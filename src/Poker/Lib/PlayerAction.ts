@@ -88,6 +88,7 @@ export const setFold = async (
         folded: true,
       },
     });
+
   } catch (error) {
     console.log(error);
     throw new Error("Could not fold");

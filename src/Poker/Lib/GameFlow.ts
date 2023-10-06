@@ -566,8 +566,10 @@ export const endGameIfThereIsOnlyOnePlayerLeft = async (
   pokerTable_id: number
 ) => {
   const activePlayers = await getActivePlayers(app, pokerTable_id);
-  const table = await getTable(app, pokerTable_id);
+  console.log(activePlayers);
   if (activePlayers.length === 1) {
+    await moveBetsToPot(app, pokerTable_id);
+    const table = await getTable(app, pokerTable_id);
     const winner = await app.prisma.player.update({
       where: {
         player_id: activePlayers[0].player_id,
